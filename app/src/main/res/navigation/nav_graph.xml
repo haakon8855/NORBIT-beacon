@@ -7,8 +7,8 @@
 
     <fragment
         android:id="@+id/FirstFragment"
-        android:name="com.kn.norbit_beacon.FirstFragment"
-        android:label="@string/first_fragment_label"
+        android:name="com.kn.norbit_beacon.Home"
+        android:label="@string/title"
         tools:layout="@layout/fragment_first">
 
         <action
@@ -17,8 +17,8 @@
     </fragment>
     <fragment
         android:id="@+id/SecondFragment"
-        android:name="com.kn.norbit_beacon.SecondFragment"
-        android:label="@string/second_fragment_label"
+        android:name="com.kn.norbit_beacon.Advertising"
+        android:label="@string/title"
         tools:layout="@layout/fragment_second">
 
         <action
