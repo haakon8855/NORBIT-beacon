@@ -2,7 +2,6 @@ package com.kn.norbit_beacon
 
 import android.Manifest
 import android.app.AlertDialog
-import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.core.app.ActivityCompat
@@ -34,8 +33,13 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
     private var lastKnownLocation: Location? = null
     private var listener: LocationProvider.Listener? = null
     private var locationRequest = LocationRequest.create()
+    private var running: Boolean = false
 
     override fun getCurrentLocation(): Location? = lastKnownLocation
+
+    override fun getRunning(): Boolean {
+        return running
+    }
 
     public fun requestLocationPermission() {
         ActivityCompat.requestPermissions(
@@ -51,12 +55,14 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
     public fun checkLocationPermission() {
         if (ActivityCompat.checkSelfPermission(
                 activity, Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED &&
+            ) != PackageManager.PERMISSION_GRANTED ||
             ActivityCompat.checkSelfPermission(
                 activity, Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             // Access not granted
+            running = false
+            stopUpdates()
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     activity, Manifest.permission.ACCESS_FINE_LOCATION
                 )
@@ -82,6 +88,7 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
 
     override fun startUpdates() {
         stopUpdates()
+        running = true
         if (this.listener != null) {
             checkLocationPermission()
             client.lastLocation

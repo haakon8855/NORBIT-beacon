@@ -3,6 +3,12 @@ package com.kn.norbit_beacon
 import android.location.Location
 
 interface LocationProvider {
+
+    /**
+     * Returns the running state of the location provider
+     */
+    fun getRunning(): Boolean
+
     /**
      * Subscribe to notifications for location updates
      * @param listener

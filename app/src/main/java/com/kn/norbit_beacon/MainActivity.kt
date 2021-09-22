@@ -1,7 +1,6 @@
 package com.kn.norbit_beacon
 
 import android.location.Location
-import android.location.LocationRequest
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
@@ -11,9 +10,6 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.CancellationTokenSource
 import com.kn.norbit_beacon.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity(), LocationProvider.Listener {
@@ -37,12 +33,14 @@ class MainActivity : AppCompatActivity(), LocationProvider.Listener {
 
         // Set up location manager
         locationFetcher = FusedLocationFetcher(this)
-        locationFetcher.setListener(this)
-        startLocationUpdates()
+        initializeLocationFetcher()
 
         binding.fab.setOnClickListener { view ->
             // Should now have last known location in 'this.lastLocation'
             var snackbarText = ""
+            if (!locationFetcher.getRunning()) {
+                initializeLocationFetcher()
+            }
             if (this::lastLocation.isInitialized) {
                 if (lastLocation != null) {
                     val lat = lastLocation.latitude
@@ -61,7 +59,8 @@ class MainActivity : AppCompatActivity(), LocationProvider.Listener {
         }
     }
 
-    private fun startLocationUpdates() {
+    private fun initializeLocationFetcher() {
+        locationFetcher.setListener(this)
         locationFetcher.startUpdates()
     }
 
