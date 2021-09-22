@@ -1,5 +1,7 @@
 package com.kn.norbit_beacon
 
+import android.location.Location
+import android.location.LocationRequest
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
@@ -9,12 +11,17 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.kn.norbit_beacon.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), LocationProvider.Listener {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private lateinit var lastLocation: Location
+    private lateinit var locationFetcher: FusedLocationFetcher
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,10 +35,34 @@ class MainActivity : AppCompatActivity() {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
+        // Set up location manager
+        locationFetcher = FusedLocationFetcher(this)
+        locationFetcher.setListener(this)
+        startLocationUpdates()
+
         binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+            // Should now have last known location in 'this.lastLocation'
+            var snackbarText = ""
+            if (this::lastLocation.isInitialized) {
+                if (lastLocation != null) {
+                    val lat = lastLocation.latitude
+                    val lng = lastLocation.longitude
+                    val acc = lastLocation.accuracy
+                    val age = (System.currentTimeMillis()-lastLocation.time)/1000
+                    snackbarText = "Lat: $lat, Lng: $lng, Acc: $acc\nAge(sec): $age"
+                } else {
+                    snackbarText = "Location is null, missing permissions?"
+                }
+            } else{
+                snackbarText = "Location is uninitialized, missing permissions?"
+            }
+            Snackbar.make(view, snackbarText, Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show()
         }
+    }
+
+    private fun startLocationUpdates() {
+        locationFetcher.startUpdates()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -55,4 +86,15 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
+
+    override fun onNewLocationUpdate(location: Location) {
+        onLocationUpdate(location)
+    }
+
+    override fun onLocationUpdate(location: Location?) {
+        if (location != null) {
+            lastLocation = location
+        }
+    }
+
 }
