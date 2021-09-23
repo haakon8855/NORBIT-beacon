@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity(), LocationProvider.Listener {
         // Set up location manager
         locationFetcher = FusedLocationFetcher(this)
         initializeLocationFetcher()
-
+        //The mail button.
         binding.fab.setOnClickListener { view ->
             // Should now have last known location in 'this.lastLocation'
             var snackbarText = ""
