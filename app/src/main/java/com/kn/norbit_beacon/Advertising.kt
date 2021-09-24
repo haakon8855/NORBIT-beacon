@@ -1,9 +1,5 @@
 package com.kn.norbit_beacon
 
-import android.Manifest
-import android.app.Activity
-import android.app.AlertDialog
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertisingSetParameters
@@ -14,16 +10,13 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.fragment.findNavController
 import com.kn.norbit_beacon.databinding.FragmentSecondBinding
 import android.bluetooth.le.AdvertisingSet
 
 import android.bluetooth.le.AdvertisingSetCallback
-import android.content.pm.PackageManager
 import android.util.Log
 import android.os.ParcelUuid
-import androidx.core.app.ActivityCompat
 import java.util.*
 
 
@@ -42,6 +35,8 @@ class Advertising : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    fun byteArrayOfInts(vararg ints: Int) = ByteArray(ints.size) { pos -> ints[pos].toByte() }
+
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
@@ -50,6 +45,8 @@ class Advertising : Fragment() {
         val bluetoothManager =
             requireContext().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
 
+        //val byteArray = byteArrayOfInts(0x0101FF0000001200F8002A000000000001000000000000)
+
         val parameters: AdvertisingSetParameters = (AdvertisingSetParameters.Builder())
             .setLegacyMode(true)
             .setConnectable(false)
@@ -57,7 +54,7 @@ class Advertising : Fragment() {
             .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_HIGH)
             .build()
 
-        val data: AdvertiseData = AdvertiseData.Builder().setIncludeDeviceName(true).build()
+        val data: AdvertiseData = AdvertiseData.Builder().setIncludeDeviceName(false).build()
 
         advertiser = bluetoothManager.adapter.bluetoothLeAdvertiser;
 
@@ -75,8 +72,11 @@ class Advertising : Fragment() {
 
                 // After onAdvertisingSetStarted callback is called, you can modify the
                 // advertising data and scan response data:
+                val manufactuererData = byteArrayOfInts(0x01, 0x01, 0xFF, 0x00, 0x00, 0x00, 0x12, 0x00, 0xF8, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
                 currentAdvertisingSet.setAdvertisingData(
-                    AdvertiseData.Builder().setIncludeDeviceName(true).setIncludeTxPowerLevel(true).build()
+                    AdvertiseData.Builder().setIncludeDeviceName(false)
+                        .addManufacturerData(0xD109, manufactuererData)
+                        .setIncludeTxPowerLevel(true).build()
                 )
 
                 // Wait for onAdvertisingDataSet callback...
