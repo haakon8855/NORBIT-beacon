@@ -18,8 +18,8 @@ import android.bluetooth.le.AdvertisingSetCallback
 import android.location.Location
 import android.util.Log
 import android.os.ParcelUuid
-import com.google.android.material.snackbar.Snackbar
 import java.util.*
+import kotlin.math.roundToLong
 
 
 /**
@@ -34,6 +34,12 @@ class Advertising : Fragment(), LocationProvider.Listener {
     private lateinit var callback : AdvertisingSetCallback
     private lateinit var locationFetcher: FusedLocationFetcher
     private lateinit var lastLocation: Location
+    private var manufacturerId: Int = 0xD109
+    private var protocolId: ByteArray = byteArrayOfInts(0xDF, 0x02)
+    private var ids: ByteArray = byteArrayOfInts(0x01, 0x00, 0xEE, 0x00, 0x00, 0x01)
+    private lateinit var manufacturerData: ByteArray
+    private val accuracyThreshold: Int = 10
+    private var isAdvertising: Boolean = false
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -46,23 +52,13 @@ class Advertising : Fragment(), LocationProvider.Listener {
             savedInstanceState: Bundle?
     ): View? {
         Log.i("Created", "created")
+
         // Set up location manager
         locationFetcher = FusedLocationFetcher(requireActivity(), this)
         initializeLocationFetcher()
 
         val bluetoothManager =
             requireContext().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-
-        //val byteArray = byteArrayOfInts(0x0101FF0000001200F8002A000000000001000000000000)
-
-        val parameters: AdvertisingSetParameters = (AdvertisingSetParameters.Builder())
-            .setLegacyMode(true)
-            .setConnectable(false)
-            .setInterval(AdvertisingSetParameters.INTERVAL_HIGH)
-            .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_HIGH)
-            .build()
-
-        val data: AdvertiseData = AdvertiseData.Builder().setIncludeDeviceName(false).build()
 
         advertiser = bluetoothManager.adapter.bluetoothLeAdvertiser;
 
@@ -80,10 +76,9 @@ class Advertising : Fragment(), LocationProvider.Listener {
 
                 // After onAdvertisingSetStarted callback is called, you can modify the
                 // advertising data and scan response data:
-                val manufactuererData = byteArrayOfInts(0x01, 0x01, 0xFF, 0x00, 0x00, 0x00, 0x12, 0x00, 0xF8, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
                 currentAdvertisingSet.setAdvertisingData(
                     AdvertiseData.Builder().setIncludeDeviceName(false)
-                        .addManufacturerData(0xD109, manufactuererData)
+                        .addManufacturerData(manufacturerId, manufacturerData)
                         .setIncludeTxPowerLevel(true).build()
                 )
 
@@ -91,7 +86,6 @@ class Advertising : Fragment(), LocationProvider.Listener {
                 currentAdvertisingSet.setScanResponseData(
                     AdvertiseData.Builder().addServiceUuid(ParcelUuid(UUID.randomUUID())).build()
                 )
-                // Wait for onScanResponseDataSet callback...
             }
 
             override fun onAdvertisingDataSet(advertisingSet: AdvertisingSet, status: Int) {
@@ -107,12 +101,8 @@ class Advertising : Fragment(), LocationProvider.Listener {
             }
         }
 
-        advertiser.startAdvertisingSet(parameters, data, null, null, null, callback);
-
-
         _binding = FragmentSecondBinding.inflate(inflater, container, false)
         return binding.root
-
 
         /*
         //The mail button.
@@ -140,6 +130,26 @@ class Advertising : Fragment(), LocationProvider.Listener {
         }*/
     }
 
+    private fun setManufacturerData(protocol: ByteArray, ids: ByteArray, gps: ByteArray) {
+        manufacturerData = protocol + ids + gps
+    }
+
+    private fun startAdvertising() {
+        if (!isAdvertising) {
+            val parameters: AdvertisingSetParameters = (AdvertisingSetParameters.Builder())
+                .setLegacyMode(true)
+                .setConnectable(false)
+                .setInterval(AdvertisingSetParameters.INTERVAL_HIGH)
+                .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_HIGH)
+                .build()
+
+            val data: AdvertiseData = AdvertiseData.Builder().setIncludeDeviceName(false).build()
+
+            advertiser.startAdvertisingSet(parameters, data, null, null, null, callback);
+            isAdvertising = true
+        }
+    }
+
     private fun initializeLocationFetcher() {
         locationFetcher.setListener(this)
         locationFetcher.startUpdates()
@@ -149,11 +159,37 @@ class Advertising : Fragment(), LocationProvider.Listener {
         onLocationUpdate(location)
     }
 
+    private fun longToLittleEndian4B(number: Long): ByteArray {
+        val b = ByteArray(4)
+        b[0] = (number and 0xFF).toByte()
+        b[1] = (number shr 8 and 0xFF).toByte()
+        b[2] = (number shr 16 and 0xFF).toByte()
+        b[3] = (number shr 24 and 0xFF).toByte()
+        return b
+    }
+
+    private fun longToLittleEndian2B(number: Long): ByteArray {
+        val b = ByteArray(2)
+        b[0] = (number and 0xFF).toByte()
+        b[1] = (number shr 8 and 0xFF).toByte()
+        return b
+    }
+
     override fun onLocationUpdate(location: Location?) {
-        Log.i("Updated", "updated")
         if (location != null) {
-            // TODO: Dont update if accuracy is worse than earlier and/or greater than some threshold
-            lastLocation = location
+            if (location.accuracy <= accuracyThreshold) {
+                lastLocation = location
+                Log.i("Seconds", ""+location.time+"s")
+                val seconds = longToLittleEndian4B(lastLocation.time/1000)
+                val lat = longToLittleEndian4B(((lastLocation.latitude + 180) * 100000).roundToLong())
+                val lng = longToLittleEndian4B(((lastLocation.longitude + 90) * 100000).roundToLong())
+                val alt = longToLittleEndian2B(lastLocation.altitude.toLong())
+                val acc = ByteArray(1)
+                acc[0] = (lastLocation.accuracy.roundToLong() and 0xFF).toByte()
+                val gps = seconds + lat + lng + alt + acc
+                setManufacturerData(protocolId, ids, gps)
+                startAdvertising()
+            }
             Log.i("Location:", "d"+location.accuracy)
         }
     }
@@ -175,6 +211,7 @@ class Advertising : Fragment(), LocationProvider.Listener {
 
         // When done with the advertising:
         advertiser.stopAdvertisingSet(callback)
+        isAdvertising = false
 
         super.onDestroyView()
         _binding = null
