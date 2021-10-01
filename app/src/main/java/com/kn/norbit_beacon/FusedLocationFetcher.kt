@@ -1,15 +1,18 @@
 package com.kn.norbit_beacon
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.core.app.ActivityCompat
+import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.*
 
 const val BEACON_LOCATION_REQUEST_CODE = 99
 
-class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
+class FusedLocationFetcher(activity: Activity, currentFragment: Advertising) : LocationProvider {
     companion object {
         //How fast can your application process location updates requested by other applications
         private val DEFAULT_FASTEST_INTERVAL: Long = 500 // 1 Second
@@ -34,6 +37,7 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
     private var listener: LocationProvider.Listener? = null
     private var locationRequest = LocationRequest.create()
     private var running: Boolean = false
+    private val currentFragment : Advertising = currentFragment
 
     override fun getCurrentLocation(): Location? = lastKnownLocation
 
@@ -41,7 +45,7 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
         return running
     }
 
-    public fun requestLocationPermission() {
+    private fun requestLocationPermission() {
         ActivityCompat.requestPermissions(
             activity,
             arrayOf(
@@ -52,16 +56,18 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
         )
     }
 
-    public fun checkLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(
-                activity, Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(
-                activity, Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+    private fun hasLocationPermission() : Boolean {
+        return (ActivityCompat.checkSelfPermission(
+                    activity, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(
+                    activity, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED)
+    }
+
+    private fun checkLocationPermission() {
+        if (!hasLocationPermission()) {
             // Access not granted
-            running = false
             stopUpdates()
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     activity, Manifest.permission.ACCESS_FINE_LOCATION
@@ -88,21 +94,31 @@ class FusedLocationFetcher(activity: MainActivity) : LocationProvider {
 
     override fun startUpdates() {
         stopUpdates()
-        running = true
-        if (this.listener != null) {
+        if (hasLocationPermission()) {
+            addUpdateListeners()
+        } else {
             checkLocationPermission()
-            client.lastLocation
-                .addOnSuccessListener { location -> handleLocationUpdate(location) }
-                .addOnCompleteListener {
-                    val interval =
-                        if (lastKnownLocation == null) DEFAULT_SHORT_INTERVAL else DEFAULT_LONG_INTERVAL
-                    requestLocationUpdates(interval, LOCATION_PRIORITY)
-                }
-
+            if (hasLocationPermission() && this.listener != null) {
+                addUpdateListeners()
+            } else {
+                currentFragment.moveToHome()
+            }
         }
     }
 
+    @SuppressLint("MissingPermission")
+    fun addUpdateListeners() {
+        client.lastLocation
+            .addOnSuccessListener { location -> handleLocationUpdate(location) }
+            .addOnCompleteListener {
+                val interval =
+                    if (lastKnownLocation == null) DEFAULT_SHORT_INTERVAL else DEFAULT_LONG_INTERVAL
+                requestLocationUpdates(interval, LOCATION_PRIORITY)
+            }
+    }
+
     override fun stopUpdates() {
+        running = false
         client.removeLocationUpdates(locationCallbackHelper)
         reset()
     }

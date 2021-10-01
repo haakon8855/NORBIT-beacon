@@ -12,12 +12,10 @@ import android.view.Menu
 import android.view.MenuItem
 import com.kn.norbit_beacon.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity(), LocationProvider.Listener {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
-    private lateinit var lastLocation: Location
-    private lateinit var locationFetcher: FusedLocationFetcher
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,37 +29,6 @@ class MainActivity : AppCompatActivity(), LocationProvider.Listener {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        // Set up location manager
-        locationFetcher = FusedLocationFetcher(this)
-        initializeLocationFetcher()
-        //The mail button.
-        binding.fab.setOnClickListener { view ->
-            // Should now have last known location in 'this.lastLocation'
-            var snackbarText = ""
-            if (!locationFetcher.getRunning()) {
-                initializeLocationFetcher()
-            }
-            if (this::lastLocation.isInitialized) {
-                if (lastLocation != null) {
-                    val lat = lastLocation.latitude
-                    val lng = lastLocation.longitude
-                    val acc = lastLocation.accuracy
-                    val age = (System.currentTimeMillis()-lastLocation.time)/1000
-                    snackbarText = "Lat: $lat, Lng: $lng, Acc: $acc\nAge(sec): $age"
-                } else {
-                    snackbarText = "Location is null, missing permissions?"
-                }
-            } else{
-                snackbarText = "Location is uninitialized, missing permissions?"
-            }
-            Snackbar.make(view, snackbarText, Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
-    }
-
-    private fun initializeLocationFetcher() {
-        locationFetcher.setListener(this)
-        locationFetcher.startUpdates()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -84,16 +51,6 @@ class MainActivity : AppCompatActivity(), LocationProvider.Listener {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
-    }
-
-    override fun onNewLocationUpdate(location: Location) {
-        onLocationUpdate(location)
-    }
-
-    override fun onLocationUpdate(location: Location?) {
-        if (location != null) {
-            lastLocation = location
-        }
     }
 
 }
