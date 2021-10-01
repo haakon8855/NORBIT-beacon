@@ -28,8 +28,8 @@ import kotlin.math.roundToLong
 class Advertising : Fragment(), LocationProvider.Listener {
 
     private var _binding: FragmentSecondBinding? = null
+    private val LOG_TAG: String = "Bluetooth callback"
     private lateinit var advertiser : BluetoothLeAdvertiser
-    private val LOG_TAG : String = "noe"
     private lateinit var currentAdvertisingSet : AdvertisingSet
     private lateinit var callback : AdvertisingSetCallback
     private lateinit var locationFetcher: FusedLocationFetcher
@@ -51,7 +51,6 @@ class Advertising : Fragment(), LocationProvider.Listener {
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        Log.i("Created", "created")
 
         // Set up location manager
         locationFetcher = FusedLocationFetcher(requireActivity(), this)
@@ -169,6 +168,7 @@ class Advertising : Fragment(), LocationProvider.Listener {
     }
 
     private fun longToLittleEndian2B(number: Long): ByteArray {
+        // TODO: Merge this method into longToLittleEndian4B using a for loop
         val b = ByteArray(2)
         b[0] = (number and 0xFF).toByte()
         b[1] = (number shr 8 and 0xFF).toByte()
@@ -179,7 +179,6 @@ class Advertising : Fragment(), LocationProvider.Listener {
         if (location != null) {
             if (location.accuracy <= accuracyThreshold) {
                 lastLocation = location
-                Log.i("Seconds", ""+location.time+"s")
                 val seconds = longToLittleEndian4B(lastLocation.time/1000)
                 val lat = longToLittleEndian4B(((lastLocation.latitude + 180) * 100000).roundToLong())
                 val lng = longToLittleEndian4B(((lastLocation.longitude + 90) * 100000).roundToLong())
@@ -190,7 +189,6 @@ class Advertising : Fragment(), LocationProvider.Listener {
                 setManufacturerData(protocolId, ids, gps)
                 startAdvertising()
             }
-            Log.i("Location:", "d"+location.accuracy)
         }
     }
 
