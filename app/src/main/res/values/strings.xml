@@ -18,4 +18,5 @@
     <!-- Need to change/add something to this description later -->
     <string name="app_description">Click the button below to start using your phone as a calibrator
         for the location system. After pressing the button, move around the area to calibrate.</string>
+    <string name="accuracy">Accuracy: %1$d</string>
 </resources>

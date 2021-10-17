@@ -38,7 +38,7 @@ class Advertising : Fragment(), LocationProvider.Listener {
     private var protocolId: ByteArray = byteArrayOfInts(0xDF, 0x02)
     private var ids: ByteArray = byteArrayOfInts(0x01, 0x00, 0xEE, 0x00, 0x00, 0x01)
     private lateinit var manufacturerData: ByteArray
-    private val accuracyThreshold: Int = 10
+    private val accuracyThreshold: Int = 5
     private var isAdvertising: Boolean = false
 
     // This property is only valid between onCreateView and
