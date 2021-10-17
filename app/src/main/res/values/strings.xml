@@ -14,9 +14,12 @@
     <string name="title">NORBIT mobile beacon</string>
     <string name="start_advertising">Start advertising</string>
     <string name="stop_advertising">Stop advertising</string>
-    <string name="sending_advertising_packets">Sending advertising packets …</string>
+    <string name="info_packets">Waiting for better accuracy …</string>
     <!-- Need to change/add something to this description later -->
     <string name="app_description">Click the button below to start using your phone as a calibrator
         for the location system. After pressing the button, move around the area to calibrate.</string>
-    <string name="accuracy">Accuracy: %1$d</string>
+    <!-- Tried using parameters, like <string name="accuracy">Accuracy: %1$d</string>, but value did not show up -->
+    <!-- Ended up using two different strings instead -->
+    <string name="accuracy_text">Accuracy: </string>
+    <string name="accuracy_value">0</string>
 </resources>
