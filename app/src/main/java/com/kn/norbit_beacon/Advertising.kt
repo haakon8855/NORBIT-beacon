@@ -183,6 +183,15 @@ class Advertising : Fragment(), LocationProvider.Listener {
         infoPacketsTextView = requireView().findViewById(R.id.info_packets)
         infoPacketsTextView.text = "Waiting for better accuracy …"
         if (location != null) {
+            accuracyValueTextView = requireView().findViewById(R.id.accuracyValueTextView)
+            //Tried using parameters in string, but did not work.
+            //accuracyTextString = requireActivity().getString(R.string.accuracy_string, location.accuracy.roundToInt())
+            //accuracyTextView.text = location.accuracy.toString()
+            if (this::lastLocation.isInitialized) {
+                accuracyValueTextView.text = "Current:" + location.accuracy.toString() + ", best:" + lastLocation.accuracy.toString()
+            } else {
+                accuracyValueTextView.text = "Current:" + location.accuracy.toString()
+            }
             if (location.accuracy <= accuracyThreshold) {
                 lastLocation = location
                 val seconds = longToLittleEndian4B(lastLocation.time/1000)
@@ -196,11 +205,6 @@ class Advertising : Fragment(), LocationProvider.Listener {
                 startAdvertising()
 
                 infoPacketsTextView.text = "Sending advertising packets …"
-                accuracyValueTextView = requireView().findViewById(R.id.accuracyValueTextView)
-                //Tried using parameters in string, but did not work.
-                //accuracyTextString = requireActivity().getString(R.string.accuracy_string, location.accuracy.roundToInt())
-                //accuracyTextView.text = location.accuracy.toString()
-                accuracyValueTextView.text = location.accuracy.toString()
 
                 Log.i("acc", location.accuracy.roundToInt().toString())
             }
