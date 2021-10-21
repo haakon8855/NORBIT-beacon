@@ -18,7 +18,9 @@ import android.bluetooth.le.AdvertisingSetCallback
 import android.location.Location
 import android.util.Log
 import android.os.ParcelUuid
+import android.widget.TextView
 import java.util.*
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 
@@ -38,8 +40,10 @@ class Advertising : Fragment(), LocationProvider.Listener {
     private var protocolId: ByteArray = byteArrayOfInts(0xDF, 0x02)
     private var ids: ByteArray = byteArrayOfInts(0x01, 0x00, 0xEE, 0x00, 0x00, 0x01)
     private lateinit var manufacturerData: ByteArray
-    private val accuracyThreshold: Int = 10
+    private val accuracyThreshold: Int = 5
     private var isAdvertising: Boolean = false
+    private lateinit var accuracyValueTextView: TextView
+    private lateinit var infoPacketsTextView: TextView
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -176,7 +180,18 @@ class Advertising : Fragment(), LocationProvider.Listener {
     }
 
     override fun onLocationUpdate(location: Location?) {
+        infoPacketsTextView = requireView().findViewById(R.id.info_packets)
+        infoPacketsTextView.text = "Waiting for better accuracy …"
         if (location != null) {
+            accuracyValueTextView = requireView().findViewById(R.id.accuracyValueTextView)
+            //Tried using parameters in string, but did not work.
+            //accuracyTextString = requireActivity().getString(R.string.accuracy_string, location.accuracy.roundToInt())
+            //accuracyTextView.text = location.accuracy.toString()
+            if (this::lastLocation.isInitialized) {
+                accuracyValueTextView.text = "Current:" + location.accuracy.toString() + ", best:" + lastLocation.accuracy.toString()
+            } else {
+                accuracyValueTextView.text = "Current:" + location.accuracy.toString()
+            }
             if (location.accuracy <= accuracyThreshold) {
                 lastLocation = location
                 val seconds = longToLittleEndian4B(lastLocation.time/1000)
@@ -188,6 +203,10 @@ class Advertising : Fragment(), LocationProvider.Listener {
                 val gps = seconds + lat + lng + alt + acc
                 setManufacturerData(protocolId, ids, gps)
                 startAdvertising()
+
+                infoPacketsTextView.text = "Sending advertising packets …"
+
+                Log.i("acc", location.accuracy.roundToInt().toString())
             }
         }
     }
